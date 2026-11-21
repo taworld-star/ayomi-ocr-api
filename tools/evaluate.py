@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-DEFAULT_DIR = ROOT.parent / "ayomi-project-cut-meutia" / "docs" / "spesimen-dokumen"
+DEFAULT_DIR = ROOT.parent / "ayomi-project-cut-meutia" / "docs" / "06-fitur-ai" / "spesimen-dokumen"
 FIELDS = ["document_number", "institution_name", "issuer", "issued_on", "expires_on", "address"]
 MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus",
           "September", "Oktober", "November", "Desember"]
