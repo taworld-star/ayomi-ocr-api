@@ -19,6 +19,35 @@ Aplikasi: model bahasa mengambil isian + cek kutipan ──▶ usulan untuk Admi
 Admin memverifikasi dokumen ──▶ Admin menilai Safety Score ──▶ skor publik
 ```
 
+## Repository terkait
+
+| Repository | Isi |
+| --- | --- |
+| [Project-Ayomi_Cut_Meutia](https://github.com/taworld-star/Project-Ayomi_Cut_Meutia) | Aplikasi web Ayomi (Next.js + Supabase): halaman, REST API, database, dan dokumentasi. Memanggil layanan ini dari server |
+| [ayomi-cv-api](https://github.com/taworld-star/ayomi-cv-api) | Layanan **Foto Fokus Anak** (YOLO11n-seg) |
+| [ayomi-ocr-api](https://github.com/taworld-star/ayomi-ocr-api) (repo ini) | Layanan **OCR dokumen legal** (RapidOCR PP-OCRv5) |
+| [ayomi-triage-api](https://github.com/taworld-star/ayomi-triage-api) | Layanan **triage urgensi insiden** (mesin aturan rubrik; IndoBERT eksperimen) |
+
+- Website: https://project-ayomi-cut-meutia.vercel.app
+- Dokumentasi API aplikasi (Swagger UI): `docs/05-api/swagger.html` di repository aplikasi
+- Dokumentasi semua fitur AI: `docs/06-fitur-ai/` di repository aplikasi
+
+## Ringkasan fitur AI
+
+| Poin | Isi |
+| --- | --- |
+| **Fitur** | **Safety Score & Legal Verification**: Admin menekan **Baca dengan AI** pada dokumen legal daycare |
+| **Use case** | Computer Vision (OCR), dilanjutkan model bahasa di aplikasi web untuk mengambil isian |
+| **Mengapa AI dibutuhkan** | Orang tua tidak punya tolok ukur legalitas daycare yang terstandarisasi (PRD 2.1). Admin harus memeriksa banyak dokumen (izin operasional, registrasi usaha, SOP, sertifikat staf, pemeriksaan fasilitas). OCR mempercepat pemeriksaan dan menandai ketidakcocokan; keputusan tetap di tangan Admin |
+| **Model** | RapidOCR dengan model pra-latih **PaddleOCR PP-OCRv5** (detektor mobile + pengenal huruf **Latin**), Apache-2.0, di ONNX Runtime CPU. Isian diambil oleh model bahasa terbuka `qwen/qwen3.8-27b` (lewat Groq) di aplikasi web |
+| **Alasan memilih** | Open source dan ringan (±13 MB) sehingga berjalan di CPU tanpa GPU; pengenal Latin menjaga huruf dan spasi bahasa Indonesia; PDF berlapis teks dibaca langsung tanpa OCR |
+| **Data** | Dokumen legal yang diunggah Pengelola (PDF/JPG/PNG). Untuk pengujian: 16 dokumen spesimen **fiktif** buatan tim (3 daycare × 5 jenis, ditambah 1 hasil scan) dengan kunci jawaban; tidak memakai dokumen daycare asli |
+| **Input → output** | Berkas dokumen → teks per halaman dengan sumber (`text_layer` atau `ocr`), lalu di aplikasi: isian usulan dengan kutipan per halaman, isian yang hilang, dan peringatan |
+| **Evaluasi** | **80/81 isian (99%)** terbaca tepat di server production; pada alur penuh, **tidak ada nilai salah yang lolos** karena isian tanpa kutipan di teks OCR dikosongkan (bagian [Mengukur akurasi](#mengukur-akurasi)) |
+| **Batasan dan risiko** | Scan buram atau miring menurunkan kualitas. Dokumen spesimen bersih, jadi angkanya bukan akurasi pada dokumen asli. OCR tidak bisa memastikan keaslian dokumen; karena itu Admin yang memutuskan setuju, minta revisi, atau tolak |
+
+Dokumentasi lengkap semua fitur AI Ayomi ada di `docs/06-fitur-ai/` pada repository aplikasi.
+
 ## Model
 
 - **Mesin:** [RapidOCR](https://github.com/RapidAI/RapidOCR) 3.10, berjalan dengan model pra-latih **PaddleOCR PP-OCRv5** (Apache-2.0) di ONNX Runtime, hanya memakai CPU.
@@ -102,7 +131,7 @@ Tes (sekitar 1 menit, karena satu tes membaca scan dengan OCR):
 
 ## Mengukur akurasi
 
-`tools/evaluate.py` membaca semua dokumen spesimen fiktif (`../ayomi-project-cut-meutia/docs/spesimen-dokumen`). Untuk setiap dokumen, skrip mengecek apakah nomor, nama lembaga, penerbit, tanggal, dan alamat dari `kunci-jawaban.json` muncul di teks hasil OCR.
+`tools/evaluate.py` membaca semua dokumen spesimen fiktif (`../ayomi-project-cut-meutia/docs/06-fitur-ai/spesimen-dokumen`). Untuk setiap dokumen, skrip mengecek apakah nomor, nama lembaga, penerbit, tanggal, dan alamat dari `kunci-jawaban.json` muncul di teks hasil OCR.
 
 ```bash
 .venv/Scripts/python tools/evaluate.py                       # paksa OCR (uji terberat)
@@ -124,7 +153,9 @@ Hasil 19 November 2026 (OCR dipaksa untuk semua halaman, laptop 2 inti):
 | Alamat | 13/16 |
 | **Total** | **78/81 (96%)** |
 
-Ketiga alamat yang terlewat punya kesalahan yang sama: singkatan "Jl." terbaca "J.", sedangkan sisa alamatnya benar. Total waktunya 417 detik untuk 16 berkas (25 halaman), rata-rata sekitar 17 detik per halaman.
+Di server Dokploy (dari `--url`, 19 November 2026), hasilnya **80/81 (99%)** dalam 98 detik untuk 25 halaman, sekitar 4 detik per halaman. Uji ulang 21 November 2026 memberi hasil yang sama, **80/81**, dengan waktu 3,4–14,1 detik per dokumen (89 detik untuk 16 berkas). Hanya satu alamat yang terlewat. Selisih kecil antara hasil laptop dan server wajar, karena hitungan model di CPU yang berbeda bisa sedikit berbeda.
+
+Di laptop, ketiga alamat yang terlewat punya kesalahan yang sama: singkatan "Jl." terbaca "J.", sedangkan sisa alamatnya benar. Total waktunya 417 detik untuk 16 berkas (25 halaman), rata-rata sekitar 17 detik per halaman.
 
 Pembuat dokumen spesimen ada di `tools/specimen/generate.py`, dan hasilnya ditulis ke folder dokumen spesimen di project web.
 

@@ -15,7 +15,7 @@ from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer, 
 rl_config.invariant = 1
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_OUT = ROOT.parent / "ayomi-project-cut-meutia" / "docs" / "spesimen-dokumen"
+DEFAULT_OUT = ROOT.parent / "ayomi-project-cut-meutia" / "docs" / "06-fitur-ai" / "spesimen-dokumen"
 OUT = DEFAULT_OUT
 AS_OF = "2026-11-18"
 CITY = "Kota Simulasi"
